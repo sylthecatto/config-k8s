@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: startup-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: startup-app
+  template:
+    metadata:
+      labels:
+        app: startup-app
+    spec:
+      containers:
+        - name: startup-app
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
