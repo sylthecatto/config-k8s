@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sample-app
+  namespace: staging
+spec:
+  serviceName: "sample-app"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sample-app
+  template:
+    metadata:
+      labels:
+        app: sample-app
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: sample-app
+      containers:
+        - name: sample-app
+          # --- Combined registry, app, and version tag ---
+          image: 192.168.10.23:5000/sample-app:5ecf28e"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PGHOST
+              value: "postgres-service"
+            - name: PGPORT
+              value: "5432"
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/data
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+  volumeClaimTemplates:
+    - metadata:
+        name: app-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "local-path"
+        resources:
+          requests:
+            storage: 5Gi
