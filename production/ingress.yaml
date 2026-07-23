@@ -1,18 +1,19 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: myapp
+  name: sample-app-ingress
   namespace: production
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
 spec:
-  ingressClassName: traefik
+  ingressClassName: traefik   
   rules:
-    - host: myapp.local
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: myapp
+                name: sample-app-service
                 port:
                   number: 80
