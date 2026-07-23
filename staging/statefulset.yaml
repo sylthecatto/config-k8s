@@ -24,7 +24,7 @@ spec:
       containers:
         - name: sample-app
           # --- Combined registry, app, and version tag ---
-          image: 192.168.10.23:5000/sample-app:5ecf28e"
+          image: 192.168.10.23:5000/sample-app:5ecf28e
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
