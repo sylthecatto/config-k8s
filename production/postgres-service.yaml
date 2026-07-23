@@ -4,7 +4,7 @@ metadata:
   name: postgres-service
   namespace: production
 spec:
-  clusterIP: None
+  type: ClusterIP
   selector:
     app: postgres
   ports:
