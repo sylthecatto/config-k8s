@@ -3,17 +3,15 @@ kind: Ingress
 metadata:
   name: sample-app-ingress
   namespace: production
-  annotations:
-    ingress.kubernetes.io/ssl-redirect: "false"
 spec:
-  ingressClassName: traefik   
   rules:
-    - http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: sample-app-service
-                port:
-                  number: 80
+  - host: prod.sample.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sample-app-service
+            port:
+              number: 80
