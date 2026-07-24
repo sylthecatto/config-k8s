@@ -4,7 +4,7 @@ metadata:
   name: sample-app-ingress
   namespace: staging
   annotations:
-          traefik.ingress.kubernetes.io/rewrite-target /
+    traefik.ingress.kubernetes.io/router.middlewares: staging-strip-prefix@kubernetescrd
 spec:
   rules:
   - http:
@@ -16,3 +16,13 @@ spec:
             name: sample-app-service
             port:
               number: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-prefix
+  namespace: staging
+spec:
+  stripPrefix:
+    prefixes:
+      - /staging
