@@ -3,10 +3,11 @@ kind: Ingress
 metadata:
   name: sample-app-ingress
   namespace: production
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:
-  - host: prod.sample.local
-    http:
+  - http:
       paths:
       - path: /
         pathType: Prefix
