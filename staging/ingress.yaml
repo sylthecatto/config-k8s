@@ -3,12 +3,13 @@ kind: Ingress
 metadata:
   name: sample-app-ingress
   namespace: staging
+  annotations:
+          traefik.ingress.kubernetes.io/rewrite-target /
 spec:
   rules:
-  - host: staging.sample.local
-    http:
+  - http:
       paths:
-      - path: /
+      - path: /staging
         pathType: Prefix
         backend:
           service:
