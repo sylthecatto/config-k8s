@@ -471,7 +471,7 @@ spec:
             - name: PGPOOL_SR_CHECK_PASSWORD_FILE
               value: "/opt/bitnami/pgpool/secrets/sr-check-password"
             - name: PGPOOL_SR_CHECK_DATABASE
-              value: "postgres"
+              value: "sampleapp"
             - name: PGPOOL_ENABLE_LDAP
               value: "no"
             - name: PGPOOL_POSTGRES_USERNAME
@@ -678,7 +678,7 @@ spec:
             - name: POSTGRES_PASSWORD_FILE
               value: "/opt/bitnami/postgresql/secrets/password"
             - name: POSTGRES_DB
-              value: "postgres"
+              value: "sampleapp"
             - name: POSTGRESQL_LOG_HOSTNAME
               value: "true"
             - name: POSTGRESQL_LOG_CONNECTIONS
