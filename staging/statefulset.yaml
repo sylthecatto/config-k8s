@@ -32,7 +32,7 @@ spec:
             - name: NODE_ENV
               value: "staging"
             - name: PGHOST
-              value: "postgres-service"
+              value: "ha-postgres-postgresql-ha-pgpool"
             - name: PGPORT
               value: "5432"
             - name: PGDATABASE
