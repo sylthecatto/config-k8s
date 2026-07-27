@@ -29,6 +29,8 @@ spec:
           ports:
             - containerPort: 3000
           env:
+	    - name: NODE_ENV
+              value: "Production"
             - name: PGHOST
               value: "postgres-service"
             - name: PGPORT
