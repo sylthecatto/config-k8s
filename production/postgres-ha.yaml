@@ -9,8 +9,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: pgpool
     role: data
 spec:
@@ -38,8 +38,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: postgresql
     role: data
 spec:
@@ -67,8 +67,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 4.6.3
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 4.6.2
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: pgpool
 spec:
   maxUnavailable: 1
@@ -88,8 +88,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: postgresql
 spec:
   maxUnavailable: 1
@@ -109,8 +109,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: postgresql
     role: witness
 spec:
@@ -132,8 +132,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
 automountServiceAccountToken: false
 ---
 # Source: postgresql-ha/templates/pgpool/secrets.yaml
@@ -146,13 +146,13 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 4.6.3
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 4.6.2
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: pgpool
 type: Opaque
 data:
   admin-password: "cGdwb29sX2FkbWluXzEyMw=="
-  sr-check-password: "clF3T1JyekxlUQ=="
+  sr-check-password: "ZlJQNzlXUWtLbg=="
 ---
 # Source: postgresql-ha/templates/postgresql/secrets.yaml
 apiVersion: v1
@@ -164,31 +164,30 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: postgresql
 type: Opaque
 data:
-  password: "RlViMGZUYjJaUg=="
+  password: "bENQWW1KYVd6Qw=="
   repmgr-password: "cmVwbWdyX3Bhc3N3b3JkXzEyMw=="
 ---
-# Source: postgresql-ha/templates/postgresql/scripts-configmap.yaml
+# Source: postgresql-ha/templates/postgresql/hooks-scripts-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ha-postgres-postgresql-ha-postgresql-scripts
+  name: ha-postgres-postgresql-ha-postgresql-hooks-scripts
   namespace: "production"
   labels:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: postgresql
 data:
   pre-stop.sh: |-
     #!/bin/bash
-
     set -o errexit
     set -o pipefail
     set -o nounset
@@ -201,6 +200,7 @@ data:
     MIN_DELAY_AFTER_PG_STOP_SECONDS=$1
 
     # Load Libraries
+    . /opt/bitnami/scripts/liblog.sh
     . /opt/bitnami/scripts/libpostgresql.sh
     . /opt/bitnami/scripts/librepmgr.sh
 
@@ -209,21 +209,26 @@ data:
 
     # Auxiliary functions
     is_new_primary_ready() {
-        local -a current_primary_node
-        readarray -t current_primary_node < <(repmgr_get_primary_node)
-        local current_primary_host="${current_primary_node[0]}"
+        return_value=1
+        currenty_primary_node="$(repmgr_get_primary_node)"
+        currenty_primary_host="$(echo $currenty_primary_node | awk '{print $1}')"
 
-        if [[ -n "$current_primary_host" ]] && [[ "$current_primary_host" != "$REPMGR_NODE_NETWORK_NAME" ]]; then
+        info "$currenty_primary_host != $REPMGR_NODE_NETWORK_NAME"
+        if [[ $(echo $currenty_primary_node | wc -w) -eq 2 ]] && [[ "$currenty_primary_host" != "$REPMGR_NODE_NETWORK_NAME" ]]; then
             info "New primary detected, leaving the cluster..."
-            return 0
+            return_value=0
+        else
+            info "Waiting for a new primary to be available..."
         fi
-
-        info "Waiting for a new primary to be available..."
-        return 1
+        return $return_value
     }
 
     export MODULE="pre-stop-hook"
-    if ! is_boolean_yes "$BITNAMI_DEBUG"; then
+
+    if [[ "${BITNAMI_DEBUG}" == "true" ]]; then
+        info "Bash debug is on"
+    else
+        info "Bash debug is off"
         exec 1>/dev/null
         exec 2>/dev/null
     fi
@@ -235,74 +240,71 @@ data:
     primary_host="${primary_node[0]}"
 
     # Stop postgresql for graceful exit.
-    PG_STOP_INIT=$EPOCHSECONDS
+    PG_STOP_TIME=$EPOCHSECONDS
     postgresql_stop
 
-    if [[ -z "$primary_host" ]] || [[ "$primary_host" = "$REPMGR_NODE_NETWORK_NAME" ]]; then
+    if [[ -z "$primary_host" ]] || [[ "$primary_host" == "$REPMGR_NODE_NETWORK_NAME" ]]; then
         info "Primary node need to wait for a new primary node before leaving the cluster"
         retry_while is_new_primary_ready 10 5
     else
         info "Standby node doesn't need to wait for a new primary switchover. Leaving the cluster"
     fi
 
-    # Make sure pre-stop hook waits at least 25 seconds after stop of PG to make sure Pgpool-II detects node is down.
+    # Make sure pre-stop hook waits at least 25 seconds after stop of PG to make sure PGPOOL detects node is down.
     # default terminationGracePeriodSeconds=30 seconds
-    PG_STOP_DURATION=$((EPOCHSECONDS - PG_STOP_INIT))
-    if (( PG_STOP_DURATION < MIN_DELAY_AFTER_PG_STOP_SECONDS )); then
-        WAIT_TO_PG_POOL_TIME=$((MIN_DELAY_AFTER_PG_STOP_SECONDS - PG_STOP_DURATION))
-        info "Waiting additional $WAIT_TO_PG_POOL_TIME seconds for Pgpool-II to detect node is down"
+    PG_STOP_DURATION=$(($EPOCHSECONDS - $PG_STOP_TIME))
+    if (( $PG_STOP_DURATION < $MIN_DELAY_AFTER_PG_STOP_SECONDS )); then
+        WAIT_TO_PG_POOL_TIME=$(($MIN_DELAY_AFTER_PG_STOP_SECONDS - $PG_STOP_DURATION)) 
+        info "PG stopped including primary switchover in $PG_STOP_DURATION. Waiting additional $WAIT_TO_PG_POOL_TIME seconds for PG pool"
         sleep $WAIT_TO_PG_POOL_TIME
     fi
-  liveness-probe.sh: |-
-    #!/bin/bash
 
-    set -o errexit
-    set -o pipefail
-    set -o nounset
-
-    # Load Libraries
-    . /opt/bitnami/scripts/libpostgresql.sh
-    . /opt/bitnami/scripts/librepmgr.sh
-
-    # Load PostgreSQL & repmgr environment variables
-    . /opt/bitnami/scripts/postgresql-env.sh
-
-    # Check if PG is ready
-    pg_isready_args=("-U" "postgres" "-p" "$POSTGRESQL_PORT_NUMBER" "-h" "127.0.0.1")
-    is_boolean_yes "$POSTGRESQL_ENABLE_TLS" && pg_isready_args+=("-d" "sslcert=$POSTGRESQL_TLS_CERT_FILE sslkey=$POSTGRESQL_TLS_KEY_FILE")
-    debug_execute pg_isready "${pg_isready_args[@]}"
-
-    # Check if repmgr has split-brain issues
-    postgresql_enable_nss_wrapper
-    repmgr_check_status
   readiness-probe.sh: |-
     #!/bin/bash
-
     set -o errexit
     set -o pipefail
     set -o nounset
 
+    # Debug section
+    exec 3>&1
+    exec 4>&2
+
     # Load Libraries
+    . /opt/bitnami/scripts/liblog.sh
     . /opt/bitnami/scripts/libpostgresql.sh
-    . /opt/bitnami/scripts/librepmgr.sh
 
     # Load PostgreSQL & repmgr environment variables
     . /opt/bitnami/scripts/postgresql-env.sh
 
-    # We should not proceed if a standby clone is in progress
-    if ps waux | grep "data standby clone" | grep -qv grep; then
-        echo "standby clone in progress"
-        exit 1
-    fi
+    # Process input parameters
+    MIN_DELAY_AFTER_POD_READY_FIRST_TIME=$1
+    TMP_FIRST_READY_FILE_TS="/tmp/ts-first-ready.mark"
+    TMP_DELAY_APPLIED_FILE="/tmp/delay-applied.mark"
 
-    # Then, let's check if PG is responding to queries
-    if [[ $(PGPASSWORD="$POSTGRESQL_PASSWORD" psql -w -U "$POSTGRESQL_USERNAME" -d $POSTGRESQL_DATABASE -h 127.0.0.1 -p "$POSTGRESQL_PORT_NUMBER" -tA -c "SELECT 1" 2> /dev/null || true) = 1 ]]; then
-        # Finally, check if repmgr has split-brain issues
-        postgresql_enable_nss_wrapper
-        repmgr_check_status
+    DB_CHECK_RESULT=$(echo "SELECT 1" | postgresql_execute_print_output "$POSTGRESQL_DATABASE" "$POSTGRESQL_USERNAME" "$POSTGRESQL_PASSWORD" "-h 127.0.0.1 -tA" || echo "command failed")
+    if [[ "$DB_CHECK_RESULT" == "1" ]]; then
+      if [[ ! -f "$TMP_DELAY_APPLIED_FILE" ]]; then
+        # DB up, but initial readiness delay not applied
+        if [[ -f "$TMP_FIRST_READY_FILE_TS" ]]; then
+          # calculate delay from the first readiness success
+          FIRST_READY_TS=$(cat $TMP_FIRST_READY_FILE_TS)
+          CURRENT_DELAY_SECONDS=$(($EPOCHSECONDS - $FIRST_READY_TS))
+          if (( $CURRENT_DELAY_SECONDS > $MIN_DELAY_AFTER_POD_READY_FIRST_TIME )); then
+            # minimal delay of the first readiness state passed - report success and mark delay as applied
+            touch "$TMP_DELAY_APPLIED_FILE"
+          else
+            # minimal delay of the first readiness state not reached yet - report failure
+            exit 1
+          fi
+        else
+          # first ever readiness test success - store timestamp and report failure
+          echo $EPOCHSECONDS > $TMP_FIRST_READY_FILE_TS
+          exit 1
+        fi
+      fi
     else
-        echo "connection to database failed"
-        exit 1
+      # DB test failed - report failure
+      exit 1
     fi
 ---
 # Source: postgresql-ha/templates/pgpool/service.yaml
@@ -315,8 +317,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 4.6.3
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 4.6.2
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: pgpool
 spec:
   type: ClusterIP
@@ -342,8 +344,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
 spec:
   type: ClusterIP
   clusterIP: None
@@ -369,8 +371,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: postgresql
 spec:
   type: ClusterIP
@@ -395,8 +397,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 4.6.3
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 4.6.2
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: pgpool
 spec:
   replicas: 1
@@ -411,8 +413,8 @@ spec:
         app.kubernetes.io/instance: ha-postgres
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: postgresql-ha
-        app.kubernetes.io/version: 4.6.3
-        helm.sh/chart: postgresql-ha-16.3.2
+        app.kubernetes.io/version: 4.6.2
+        helm.sh/chart: postgresql-ha-16.2.0
         app.kubernetes.io/component: pgpool
       annotations:
     spec:
@@ -442,7 +444,7 @@ spec:
       # Auxiliary vars to populate environment variables
       containers:
         - name: pgpool
-          image: docker.io/bitnami/pgpool:4.6.3-debian-12-r0
+          image: docker.io/bitnami/pgpool:4.6.2-debian-12-r7
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -588,8 +590,8 @@ metadata:
     app.kubernetes.io/instance: ha-postgres
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: postgresql-ha
-    app.kubernetes.io/version: 17.6.0
-    helm.sh/chart: postgresql-ha-16.3.2
+    app.kubernetes.io/version: 17.5.0
+    helm.sh/chart: postgresql-ha-16.2.0
     app.kubernetes.io/component: postgresql
     role: data
 spec:
@@ -610,8 +612,8 @@ spec:
         app.kubernetes.io/instance: ha-postgres
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: postgresql-ha
-        app.kubernetes.io/version: 17.6.0
-        helm.sh/chart: postgresql-ha-16.3.2
+        app.kubernetes.io/version: 17.5.0
+        helm.sh/chart: postgresql-ha-16.2.0
         app.kubernetes.io/component: postgresql
         role: data
       annotations:
@@ -643,7 +645,7 @@ spec:
       hostIPC: false
       containers:
         - name: postgresql
-          image: docker.io/bitnami/postgresql-repmgr:17.6.0-debian-12-r2
+          image: docker.io/bitnami/postgresql-repmgr:17.5.0-debian-12-r17
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -765,13 +767,15 @@ spec:
               protocol: TCP
           livenessProbe:
             failureThreshold: 6
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 5
             exec:
               command:
-                - /liveness-probe.sh
+                - bash
+                - -ec
+                - 'ps waux | grep "data standby clone" | grep -v grep || PGPASSWORD=$(< $POSTGRES_PASSWORD_FILE) psql -w -U "postgres" -d "postgres" -h 127.0.0.1 -p 5432 -c "SELECT 1"'
           readinessProbe:
             failureThreshold: 6
             initialDelaySeconds: 5
@@ -780,7 +784,11 @@ spec:
             timeoutSeconds: 5
             exec:
               command:
-                - /readiness-probe.sh
+                - bash
+                - -ec
+                - |
+                  exec pg_isready -U "postgres" -h 127.0.0.1 -p 5432
+                  [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]
           resources:
             limits:
               cpu: 375m
@@ -820,21 +828,18 @@ spec:
               mountPath: /opt/bitnami/postgresql/secrets/sr-check-password
             - name: data
               mountPath: /bitnami/postgresql
-            - name: scripts
+            - name: hooks-scripts
               mountPath: /pre-stop.sh
               subPath: pre-stop.sh
-            - name: scripts
-              mountPath: /liveness-probe.sh
-              subPath: liveness-probe.sh
-            - name: scripts
+            - name: hooks-scripts
               mountPath: /readiness-probe.sh
               subPath: readiness-probe.sh
       volumes:
         - name: empty-dir
           emptyDir: {}
-        - name: scripts
+        - name: hooks-scripts
           configMap:
-            name: ha-postgres-postgresql-ha-postgresql-scripts
+            name: ha-postgres-postgresql-ha-postgresql-hooks-scripts
             defaultMode: 0755
         - name: postgresql-creds
           secret:
