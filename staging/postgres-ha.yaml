@@ -169,7 +169,7 @@ metadata:
     app.kubernetes.io/component: postgresql
 type: Opaque
 data:
-  password: "VVAzeTVTb2pzVg=="
+  password: "bXlzZWNyZXRwYXNzd29yZA=="
   repmgr-password: "cmVwbWdyX3Bhc3N3b3JkXzEyMw=="
 ---
 # Source: postgresql-ha/templates/postgresql/scripts-configmap.yaml
