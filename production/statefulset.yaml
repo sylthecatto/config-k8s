@@ -32,7 +32,7 @@ spec:
             - name: NODE_ENV
               value: "production"
             - name: PGHOST
-              value: "postgres-service"
+              value: "my-release-postgresql-primary"
             - name: PGPORT
               value: "5432"
             - name: PGDATABASE
